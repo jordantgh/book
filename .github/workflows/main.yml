@@ -38,8 +38,7 @@ jobs:
         cd packages/trpl
         cargo build
     - name: Run tests
-      run:
-        mdbook test --library-path packages/trpl/target/debug/deps
+      run: mdbook test --library-path packages/trpl/target/debug/deps
   package_tests:
     name: Run package tests
     runs-on: ubuntu-latest
