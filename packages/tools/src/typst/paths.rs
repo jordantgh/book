@@ -62,11 +62,22 @@ impl GeneratedFiles {
 pub fn resolve_output_dir(
     repo_root: &Path,
     output_arg: Option<PathBuf>,
-) -> PathBuf {
-    match output_arg {
+) -> Result<PathBuf, DynError> {
+    let output_dir = match output_arg {
         Some(path) if path.is_absolute() => path,
         Some(path) => repo_root.join(path),
         None => repo_root.join(DEFAULT_OUTPUT_DIR),
+    };
+
+    if output_dir_within_root(repo_root, &output_dir) {
+        Ok(output_dir)
+    } else {
+        Err(format!(
+            "output directory {} must be inside repo root {}",
+            output_dir.display(),
+            repo_root.display()
+        )
+        .into())
     }
 }
 
@@ -96,4 +107,28 @@ fn resolve_path(base: &Path, candidate: &Path) -> PathBuf {
     } else {
         base.join(candidate)
     }
+}
+
+fn output_dir_within_root(repo_root: &Path, output_dir: &Path) -> bool {
+    let repo_root = normalize_absolute_path(repo_root);
+    let output_dir = normalize_absolute_path(output_dir);
+    output_dir.starts_with(&repo_root)
+}
+
+fn normalize_absolute_path(path: &Path) -> PathBuf {
+    use std::path::Component;
+
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::Prefix(prefix) => normalized.push(prefix.as_os_str()),
+            Component::RootDir => normalized.push(component.as_os_str()),
+            Component::CurDir => {}
+            Component::ParentDir => {
+                normalized.pop();
+            }
+            Component::Normal(part) => normalized.push(part),
+        }
+    }
+    normalized
 }

@@ -8,7 +8,7 @@ use rust_book_tools::typst::paths::{ExportContext, resolve_output_dir};
 fn main() -> Result<(), DynError> {
     let repo_root = env::current_dir()?;
     let output_dir =
-        resolve_output_dir(&repo_root, env::args().nth(1).map(Into::into));
+        resolve_output_dir(&repo_root, env::args().nth(1).map(Into::into))?;
     let ctx = ExportContext::new(repo_root, output_dir);
     let files = export_to_typst(&ctx, &RustBookAdapter)?;
 
