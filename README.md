@@ -44,6 +44,14 @@ $ mdbook build
 The output will be in the `book` subdirectory. To check it out, open it in
 your web browser.
 
+To generate a print-friendly PDF from the checked-in `nostarch/` sources, run:
+
+```bash
+$ ./tools/pdf.sh
+```
+
+The PDF will be written to `dist/the-rust-programming-language.pdf` by default.
+
 _Firefox:_
 
 ```bash

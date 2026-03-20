@@ -40,6 +40,10 @@ path = "src/bin/remove_markup.rs"
 name = "cleanup_blockquotes"
 path = "src/bin/cleanup_blockquotes.rs"
 
+[[bin]]
+name = "book_pdf"
+path = "src/bin/book_pdf.rs"
+
 
 [dependencies]
 walkdir = { workspace = true }
