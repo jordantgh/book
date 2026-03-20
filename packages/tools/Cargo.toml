@@ -52,4 +52,4 @@ regex = { workspace = true }
 lazy_static = { workspace = true }
 flate2 = { workspace = true }
 tar = { workspace = true }
-pathdiff = "0.2.3"
+pathdiff = { workspace = true }
