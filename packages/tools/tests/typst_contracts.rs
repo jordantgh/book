@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -14,20 +15,15 @@ struct TestRepo {
     root: PathBuf,
 }
 
+struct ScopedDir {
+    root: PathBuf,
+}
+
 impl TestRepo {
     fn new(name: &str) -> Self {
-        let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
-        let root = std::env::temp_dir().join(format!(
-            "rust-book-tools-{name}-{}-{id}",
-            std::process::id()
-        ));
-
-        if root.exists() {
-            let _ = fs::remove_dir_all(&root);
+        Self {
+            root: new_scoped_path(&std::env::temp_dir(), name),
         }
-        fs::create_dir_all(&root).unwrap();
-
-        Self { root }
     }
 
     fn path(&self, relative: &str) -> PathBuf {
@@ -48,6 +44,24 @@ impl TestRepo {
 }
 
 impl Drop for TestRepo {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.root);
+    }
+}
+
+impl ScopedDir {
+    fn new_in(base: &Path, name: &str) -> Self {
+        Self {
+            root: new_scoped_path(base, name),
+        }
+    }
+
+    fn path(&self) -> &Path {
+        &self.root
+    }
+}
+
+impl Drop for ScopedDir {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.root);
     }
@@ -140,6 +154,38 @@ fn rust_book_adapter_uses_relative_theme_paths_in_generated_typst() {
     );
 }
 
+#[test]
+fn rust_book_adapter_matches_current_repo_conventions() {
+    let repo_root = current_repo_root();
+    let source_corpus = read_markdown_tree(&repo_root.join("src"));
+    let directive_kinds = collect_mdbook_directive_kinds(&source_corpus);
+    let adapter = RustBookAdapter;
+    let output_dir = ScopedDir::new_in(&repo_root.join("target"), "current-repo");
+    let ctx = ExportContext::new(repo_root.clone(), output_dir.path().into());
+
+    for kind in directive_kinds {
+        assert!(
+            matches!(kind.as_str(), "include" | "rustdoc_include"),
+            "current book sources use unsupported mdBook directive `{kind}`"
+        );
+    }
+
+    let prepared = adapter.prepare_markdown(&ctx).unwrap();
+    assert!(!prepared.frontmatter.trim().is_empty());
+    assert!(!prepared.body.trim().is_empty());
+    assert!(
+        !prepared.body.contains("{{#"),
+        "prepared markdown unexpectedly still contains unresolved mdBook directives"
+    );
+
+    if source_corpus.contains("<Listing") {
+        assert!(
+            prepared.body.contains("::: {.listing"),
+            "current book sources contain listing tags but the prepared markdown contains no listing divs"
+        );
+    }
+}
+
 fn rust_book_fixture() -> (TestRepo, ExportContext) {
     let repo = TestRepo::new("rust-book-fixture");
     repo.write(
@@ -196,4 +242,69 @@ visible_line();
     let output_dir = repo.path("generated");
     let ctx = ExportContext::new(repo.root.clone(), output_dir);
     (repo, ctx)
+}
+
+fn new_scoped_path(base: &Path, name: &str) -> PathBuf {
+    let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+    let root =
+        base.join(format!("rust-book-tools-{name}-{}-{id}", std::process::id()));
+
+    if root.exists() {
+        let _ = fs::remove_dir_all(&root);
+    }
+    fs::create_dir_all(&root).unwrap();
+    root
+}
+
+fn current_repo_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .unwrap()
+        .to_path_buf()
+}
+
+fn read_markdown_tree(root: &Path) -> String {
+    let mut markdown = String::new();
+    read_markdown_tree_into(root, &mut markdown);
+    markdown
+}
+
+fn read_markdown_tree_into(root: &Path, markdown: &mut String) {
+    let mut entries = fs::read_dir(root)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect::<Vec<_>>();
+    entries.sort();
+
+    for path in entries {
+        if path.is_dir() {
+            read_markdown_tree_into(&path, markdown);
+            continue;
+        }
+
+        if path.extension().and_then(|ext| ext.to_str()) == Some("md") {
+            markdown.push_str(&fs::read_to_string(path).unwrap());
+            markdown.push('\n');
+        }
+    }
+}
+
+fn collect_mdbook_directive_kinds(source: &str) -> Vec<String> {
+    let mut kinds = Vec::new();
+    let mut remainder = source;
+
+    while let Some(start) = remainder.find("{{#") {
+        let after_start = &remainder[start + 3..];
+        let end = after_start
+            .find(|ch: char| ch == ' ' || ch == '\n' || ch == '\r' || ch == '}')
+            .unwrap_or(after_start.len());
+        let kind = &after_start[..end];
+        if !kind.is_empty() && !kinds.iter().any(|existing| existing == kind) {
+            kinds.push(kind.to_string());
+        }
+        remainder = after_start;
+    }
+
+    kinds
 }
