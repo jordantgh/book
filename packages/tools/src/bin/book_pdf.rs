@@ -18,10 +18,7 @@ const SUBSECTION_SIZE: f32 = 12.5;
 const SMALL_SIZE: f32 = 10.0;
 
 fn main() -> io::Result<()> {
-    let output = std::env::args()
-        .skip(1)
-        .next()
-        .unwrap_or_else(|| "dist/the-rust-programming-language.pdf".into());
+    let output = output_path(std::env::args().skip(1));
     let output = PathBuf::from(output);
     if let Some(parent) = output.parent() {
         fs::create_dir_all(parent)?;
@@ -79,6 +76,12 @@ fn filename_number(path: &Path) -> u32 {
                 .unwrap_or(u32::MAX)
         })
         .unwrap_or(u32::MAX)
+}
+
+fn output_path(args: impl IntoIterator<Item = String>) -> String {
+    args.into_iter()
+        .find(|arg| !arg.trim().is_empty())
+        .unwrap_or_else(|| "dist/the-rust-programming-language.pdf".into())
 }
 
 #[derive(Debug, Clone)]
@@ -917,5 +920,21 @@ mod tests {
         assert_eq!(strip_list_marker("- hello"), "hello");
         assert_eq!(strip_list_marker("* hello"), "hello");
         assert_eq!(strip_list_marker("12. hello"), "hello");
+    }
+
+    #[test]
+    fn defaults_output_path_when_no_argument_is_passed() {
+        assert_eq!(
+            output_path(Vec::<String>::new()),
+            "dist/the-rust-programming-language.pdf"
+        );
+    }
+
+    #[test]
+    fn defaults_output_path_when_argument_is_empty() {
+        assert_eq!(
+            output_path(vec![String::new()]),
+            "dist/the-rust-programming-language.pdf"
+        );
     }
 }

@@ -44,12 +44,27 @@ $ mdbook build
 The output will be in the `book` subdirectory. To check it out, open it in
 your web browser.
 
-To generate a print-friendly PDF from the checked-in `nostarch/` sources, run:
+To generate a print-friendly PDF from the checked-in `nostarch/` sources, run one of the following from the repo root:
+
+_Bash / zsh / WSL_:
 
 ```bash
 $ ./tools/pdf.sh
 ```
 
+_PowerShell_:
+
+```powershell
+PS> ./tools/pdf.ps1
+```
+
+_Or run the binary directly_:
+
+```bash
+$ cargo run --release --bin book_pdf
+```
+
+You can also pass a custom output path, such as `cargo run --release --bin book_pdf -- dist/rust-book.pdf`.
 The PDF will be written to `dist/the-rust-programming-language.pdf` by default.
 
 _Firefox:_
