@@ -1,5 +1,4 @@
 #let ink = rgb("#1f2328")
-#let quiet = rgb("#667085")
 #let rule = rgb("#d0d5dd")
 #let code-fill = rgb("#f8f5ef")
 #let code-stroke = rgb("#ded6c8")
@@ -61,12 +60,16 @@
     inset: 6pt,
     stroke: (paint: rule, thickness: 0.5pt),
   )
-  show figure.caption: set text(size: config.figure_caption_size, fill: quiet)
+  show figure.caption: set text(
+    size: config.figure_caption_size,
+    fill: config.figure_caption_fill,
+  )
 
   doc
 }
 
-#let book_listing(
+#let book_listing_with(
+  config,
   number: none,
   file_name: none,
   caption: none,
@@ -74,7 +77,11 @@
   code: "",
 ) = [
   #if file_name != none [
-    #text(font: "DejaVu Sans Mono", size: 8pt, fill: quiet)[
+    #text(
+      font: "DejaVu Sans Mono",
+      size: config.file_name_size,
+      fill: config.file_name_fill,
+    )[
       Filename: #file_name
     ]
     #v(0.35em)
@@ -90,7 +97,10 @@
 
   #if caption != none or number != none [
     #v(0.45em)
-    #text(size: 8.4pt, fill: quiet)[
+    #text(
+      size: config.listing_caption_size,
+      fill: config.listing_caption_fill,
+    )[
       #if number != none [
         #strong[Listing #number]
         #if caption != none [: ]

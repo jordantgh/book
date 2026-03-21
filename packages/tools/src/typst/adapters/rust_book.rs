@@ -126,10 +126,32 @@ impl TypstAdapter for RustBookAdapter {
             .parent()
             .expect("generated body file has parent");
         let theme = relative_path(body_dir, &ctx.repo_root.join(THEME_PATH))?;
+        let layout =
+            relative_path(body_dir, &ctx.repo_root.join(LAYOUT_PATH))?;
         let body = read_text(body_typ_path)?;
         fs::write(
             body_typ_path,
-            format!("#import \"{theme}\": book_listing\n\n{body}"),
+            format!(
+                r#"#import "{theme}": book_listing_with
+#import "{layout}": rust_book_layout
+
+#let book_listing(
+  number: none,
+  file_name: none,
+  caption: none,
+  lang: "",
+  code: "",
+) = book_listing_with(
+  rust_book_layout,
+  number: number,
+  file_name: file_name,
+  caption: caption,
+  lang: lang,
+  code: code,
+)
+
+{body}"#
+            ),
         )?;
         Ok(())
     }
