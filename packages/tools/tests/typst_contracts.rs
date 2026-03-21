@@ -166,6 +166,19 @@ fn rust_book_adapter_matches_current_repo_conventions() {
     let adapter = RustBookAdapter;
     let output_dir = ScopedDir::new_in(&repo_root.join("target"), "current-repo");
     let ctx = ExportContext::new(repo_root.clone(), output_dir.path().into());
+    let files = GeneratedFiles::from_layout(&ctx, &adapter.output_layout());
+
+    for required_asset in [
+        repo_root.join("tools/typst/book.lua"),
+        repo_root.join("tools/typst/theme.typ"),
+        repo_root.join("tools/typst/layout.typ"),
+    ] {
+        assert!(
+            required_asset.is_file(),
+            "required Typst export asset is missing: {}",
+            required_asset.display()
+        );
+    }
 
     for kind in directive_kinds {
         assert!(
@@ -188,6 +201,10 @@ fn rust_book_adapter_matches_current_repo_conventions() {
             "current book sources contain listing tags but the prepared markdown contains no listing divs"
         );
     }
+
+    let wrapper = adapter.build_wrapper(&ctx, &files).unwrap();
+    assert!(wrapper.contains("#import \"../../tools/typst/layout.typ\": rust_book_layout"));
+    assert!(wrapper.contains("#show: doc => rust_book_theme(doc, rust_book_layout)"));
 }
 
 fn rust_book_fixture() -> (TestRepo, ExportContext) {
