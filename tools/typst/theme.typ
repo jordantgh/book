@@ -33,6 +33,7 @@
   show heading.where(level: 4): set block(above: 0.9em, below: 0.35em)
 
   show raw.where(block: true): it => block(
+    breakable: false,
     fill: code-fill,
     stroke: (paint: code-stroke, thickness: 0.6pt),
     inset: (x: 11pt, y: 9pt),
@@ -75,7 +76,7 @@
   caption: none,
   lang: "",
   code: "",
-) = [
+) = block(breakable: false)[
   #if file_name != none [
     #text(
       font: "DejaVu Sans Mono",
