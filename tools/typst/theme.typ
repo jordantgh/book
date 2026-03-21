@@ -42,10 +42,25 @@
     #set text(font: "DejaVu Sans Mono", size: config.code_block_size)
     #it
   ]
-  show raw.where(block: false): set text(
-    font: "DejaVu Sans Mono",
-    size: config.inline_code_size,
-  )
+  show raw.where(block: false): it => box(
+    fill: config.inline_code_fill_bg,
+    stroke: (
+      paint: config.inline_code_stroke,
+      thickness: config.inline_code_stroke_width,
+    ),
+    inset: (
+      x: config.inline_code_inset_x,
+      y: config.inline_code_inset_y,
+    ),
+    radius: config.inline_code_radius,
+  )[
+    #set text(
+      font: config.inline_code_font,
+      size: config.inline_code_size,
+      fill: config.inline_code_fill,
+    )
+    #it
+  ]
 
   show quote.where(block: true): it => block(
     fill: note-fill,
