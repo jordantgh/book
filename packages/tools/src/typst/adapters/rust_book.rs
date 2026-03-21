@@ -20,6 +20,7 @@ const BOOK_TYP: &str = "the-rust-programming-language.typ";
 const PDF_PATH: &str = "dist/the-rust-programming-language-typst.pdf";
 const FILTER_PATH: &str = "tools/typst/book.lua";
 const THEME_PATH: &str = "tools/typst/theme.typ";
+const LAYOUT_PATH: &str = "tools/typst/layout.typ";
 const PANDOC_FORMAT: &str = "markdown-tex_math_dollars+fenced_divs+bracketed_spans+raw_html+pipe_tables+table_captions+smart";
 
 lazy_static! {
@@ -144,6 +145,8 @@ impl TypstAdapter for RustBookAdapter {
             .expect("generated wrapper file has parent");
         let theme =
             relative_path(wrapper_dir, &ctx.repo_root.join(THEME_PATH))?;
+        let layout =
+            relative_path(wrapper_dir, &ctx.repo_root.join(LAYOUT_PATH))?;
         let frontmatter = files
             .frontmatter_typ
             .file_name()
@@ -157,18 +160,19 @@ impl TypstAdapter for RustBookAdapter {
 
         Ok(format!(
             r##"#import "{theme}": rust_book_theme
+#import "{layout}": rust_book_layout
 
-#show: rust_book_theme
+#show: doc => rust_book_theme(doc, rust_book_layout)
 
-#v(18%)
+#v(rust_book_layout.frontmatter_top_spacing)
 #align(center)[
-  #text(size: 28pt, weight: "bold")[The Rust Programming Language]
+  #text(size: rust_book_layout.title_size, weight: "bold")[The Rust Programming Language]
   #v(1.4em)
-  #text(size: 12pt, style: "italic")[
+  #text(size: rust_book_layout.byline_size, style: "italic")[
     Steve Klabnik, Carol Nichols, and Chris Krycho
   ]
   #v(0.7em)
-  #text(size: 10pt, fill: rgb("#667085"))[
+  #text(size: rust_book_layout.credit_size, fill: rgb("#667085"))[
     with contributions from the Rust Community
   ]
 ]

@@ -148,6 +148,10 @@ fn rust_book_adapter_uses_relative_theme_paths_in_generated_typst() {
         wrapper
             .contains("#import \"../tools/typst/theme.typ\": rust_book_theme")
     );
+    assert!(
+        wrapper.contains("#import \"../tools/typst/layout.typ\": rust_book_layout")
+    );
+    assert!(wrapper.contains("#show: doc => rust_book_theme(doc, rust_book_layout)"));
     assert!(wrapper.contains("#include \"frontmatter.typ\""));
     assert!(
         wrapper.contains("#include \"the-rust-programming-language.body.typ\"")
@@ -237,6 +241,7 @@ visible_line();
     );
     repo.touch("src/images/ferris.png");
     repo.touch("tools/typst/book.lua");
+    repo.touch("tools/typst/layout.typ");
     repo.touch("tools/typst/theme.typ");
 
     let output_dir = repo.path("generated");
