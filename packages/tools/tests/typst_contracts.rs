@@ -139,15 +139,25 @@ fn rust_book_adapter_uses_relative_theme_paths_in_generated_typst() {
 
     adapter.postprocess_body_typ(&ctx, &files.body_typ).unwrap();
     let body_typ = fs::read_to_string(&files.body_typ).unwrap();
-    assert!(body_typ.starts_with(
-        "#import \"../tools/typst/theme.typ\": book_listing\n\n= body"
-    ));
+    assert!(
+        body_typ.contains("#import \"../tools/typst/theme.typ\": book_listing_with")
+    );
+    assert!(
+        body_typ.contains("#import \"../tools/typst/layout.typ\": rust_book_layout")
+    );
+    assert!(body_typ.contains("#let book_listing("));
+    assert!(body_typ.contains(") = book_listing_with("));
+    assert!(body_typ.ends_with("\n\n= body"));
 
     let wrapper = adapter.build_wrapper(&ctx, &files).unwrap();
     assert!(
         wrapper
             .contains("#import \"../tools/typst/theme.typ\": rust_book_theme")
     );
+    assert!(
+        wrapper.contains("#import \"../tools/typst/layout.typ\": rust_book_layout")
+    );
+    assert!(wrapper.contains("#show: doc => rust_book_theme(doc, rust_book_layout)"));
     assert!(wrapper.contains("#include \"frontmatter.typ\""));
     assert!(
         wrapper.contains("#include \"the-rust-programming-language.body.typ\"")
@@ -162,6 +172,19 @@ fn rust_book_adapter_matches_current_repo_conventions() {
     let adapter = RustBookAdapter;
     let output_dir = ScopedDir::new_in(&repo_root.join("target"), "current-repo");
     let ctx = ExportContext::new(repo_root.clone(), output_dir.path().into());
+    let files = GeneratedFiles::from_layout(&ctx, &adapter.output_layout());
+
+    for required_asset in [
+        repo_root.join("tools/typst/book.lua"),
+        repo_root.join("tools/typst/theme.typ"),
+        repo_root.join("tools/typst/layout.typ"),
+    ] {
+        assert!(
+            required_asset.is_file(),
+            "required Typst export asset is missing: {}",
+            required_asset.display()
+        );
+    }
 
     for kind in directive_kinds {
         assert!(
@@ -184,6 +207,10 @@ fn rust_book_adapter_matches_current_repo_conventions() {
             "current book sources contain listing tags but the prepared markdown contains no listing divs"
         );
     }
+
+    let wrapper = adapter.build_wrapper(&ctx, &files).unwrap();
+    assert!(wrapper.contains("#import \"../../tools/typst/layout.typ\": rust_book_layout"));
+    assert!(wrapper.contains("#show: doc => rust_book_theme(doc, rust_book_layout)"));
 }
 
 fn rust_book_fixture() -> (TestRepo, ExportContext) {
@@ -237,6 +264,7 @@ visible_line();
     );
     repo.touch("src/images/ferris.png");
     repo.touch("tools/typst/book.lua");
+    repo.touch("tools/typst/layout.typ");
     repo.touch("tools/typst/theme.typ");
 
     let output_dir = repo.path("generated");
